@@ -26,4 +26,5 @@ rf_classifier = RandomForestClassifier(
 ```
 total_samples = 15000
 batch_size = 1000
+stopvalue = 10
 ```
