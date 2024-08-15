@@ -8,5 +8,6 @@ The original dataset uses a large number of features, I have provided both the o
 * Unzip the downloaded data in the initial folder (in the same folder as quickstar.ipynb).
 * This model uses the data mart lmdb format. If want to complete data set production. Please run [selftry1.py](https://github.com/schlange-git/feather-study-about-DIMO-MM/blob/main/datasets/BigEarthNet/selftry1.py) and Change code line278-280 to your own save path 
 ### Run the code
-
+**%%%%%%task.py** and **quickstart.ipynb** are similar in content. But the order of the blocks is not the same. The former is the order I wrote myself. The latter is more conducive to fast verification. I put the data preparation and other pre-work code block to the end.
 * We need to download the pre-trained weights of the original authors: https://huggingface.co/wangyi111/dino-mm/resolve/main/B14_vits8_dinomm_ep99.pth . Then put it in the checkpoints folder
+* Using only the dataset after pca is the default configuration for ipynb. If the original data (about 14GB) is used, change the name in read file code in the second block.
