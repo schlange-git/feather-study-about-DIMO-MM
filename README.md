@@ -1,4 +1,4 @@
-# feather-study-about-DIMO-MM
+# Feather-study-about-DIMO-MM
 ### Install
 * use `cvtorchvision.cvtransforms` instead of torchvision.transforms, run `pip install opencv-torchvision-transforms-yuzhiyang` to install the package
 ### Use of the dataset
@@ -8,6 +8,9 @@ The original dataset uses a large number of features, I have provided both the o
 * Unzip the downloaded data in the initial folder (in the same folder as quickstar.ipynb).
 * This model uses the data mart lmdb format. If want to complete data set production. Please run [selftry1.py](https://github.com/schlange-git/feather-study-about-DIMO-MM/blob/main/datasets/BigEarthNet/selftry1.py) and Change code line278-280 to your own save path 
 ### Run the code
-**%%%%%%task.py** and **quickstart.ipynb** are similar in content. But the order of the blocks is not the same. The former is the order I wrote myself. The latter is more conducive to fast verification. I put the data preparation and other pre-work code block to the end.
+## attention
+1. **%%%%%%task.py** and **quickstart.ipynb** are similar in content. But the order of the blocks is not the same. The former is the order I wrote myself. The latter is more conducive to fast verification. I put the data preparation and other pre-work code block to the end.
+2. In addition, the parameters are obtained in the code to quickly run the code. So the final numbers are not the values in the paper. For results similar to those in the paper, see **parameter.txt**. With the help of an RTX4090 workstation with 48GB memory and 64 core CPU, the whole process takes about 30 hours.
+## process
 * We need to download the pre-trained weights of the original authors: https://huggingface.co/wangyi111/dino-mm/resolve/main/B14_vits8_dinomm_ep99.pth . Then put it in the checkpoints folder
 * Using only the dataset after pca is the default configuration for ipynb. If the original data (about 14GB) is used, change the name in read file code in the second block.
