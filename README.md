@@ -1,16 +1,17 @@
 # Feather-study-about-DIMO-MM
-### Install
+## Install
 * use `cvtorchvision.cvtransforms` instead of torchvision.transforms, run `pip install opencv-torchvision-transforms-yuzhiyang` to install the package
-### Use of the dataset
+## Use of the dataset
 The original dataset uses a large number of features, I have provided both the original data and the pca data for quick verification.
 * The pca dataset can be downloaded from: https://drive.google.com/file/d/1Ijss-X50rg2_RH0I5E9_rT8_UqmPKBO0/view?usp=drive_link
-* The original dataset can be downloaded from:
+* The original dataset can be downloaded from: https://drive.google.com/file/d/12Q4ddan2cUdyS7dx2BcgnWvQJdSnjzlB/view?usp=drive_link
 * Unzip the downloaded data in the initial folder (in the same folder as quickstar.ipynb).
+* We need to download the pre-trained weights of the original authors: https://huggingface.co/wangyi111/dino-mm/resolve/main/B14_vits8_dinomm_ep99.pth . Then put it in the checkpoints folder
 * This model uses the data mart lmdb format. If want to complete data set production. Please run [selftry1.py](https://github.com/schlange-git/feather-study-about-DIMO-MM/blob/main/datasets/BigEarthNet/selftry1.py) and Change code line278-280 to your own save path 
-### Run the code
-## attention
+## Run the code
+### attention
 1. **%%%%%%task.py** and **quickstart.ipynb** are similar in content. But the order of the blocks is not the same. The former is the order I wrote myself. The latter is more conducive to fast verification. I put the data preparation and other pre-work code block to the end.
 2. In addition, the parameters are obtained in the code to quickly run the code. So the final numbers are not the values in the paper. For results similar to those in the paper, see **parameter.txt**. With the help of an RTX4090 workstation with 48GB memory and 64 core CPU, the whole process takes about 30 hours.
-## process
-* We need to download the pre-trained weights of the original authors: https://huggingface.co/wangyi111/dino-mm/resolve/main/B14_vits8_dinomm_ep99.pth . Then put it in the checkpoints folder
+### process
+
 * Using only the dataset after pca is the default configuration for ipynb. If the original data (about 14GB) is used, change the name in read file code in the second block.
