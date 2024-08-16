@@ -19,5 +19,5 @@ The original dataset uses a large number of features, I have provided both the o
 2. In addition, the parameters are obtained in the code to quickly run the code. So the final numbers are not the values in the paper. For results similar to those in the paper, see **parameter.md**. With the help of an RTX4090 workstation with 48GB memory and 64 core CPU, the whole process takes about 30 hours.
 ### process
 
-* Using only the dataset after pca is the default configuration for ipynb. If the original data (about 14GB) is used, change the name in read file code in the second block.
+* Using only the dataset after pca is the default configuration for ipynb. If the original data (about 14GB) is used, change the name in read file code in the third block.
 * 
