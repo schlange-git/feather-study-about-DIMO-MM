@@ -14,7 +14,7 @@ The original dataset uses a large number of features, I have provided both the o
 * We need to download the pre-trained weights of the original authors: https://huggingface.co/wangyi111/dino-mm/resolve/main/B14_vits8_dinomm_ep99.pth . Then put it in the checkpoints folde
 ### make lmdb dataset 
 The lmdb dataset is the basis for running visualisation as well as resnet-18. Approximately 100GB of space is pre-allocated for the lmdb in the code.
-* This model uses the data mart lmdb format. Please run [selftry1.py](https://github.com/schlange-git/feather-study-about-DIMO-MM/blob/main/datasets/BigEarthNet/selftry1.py) and Change code line278-280 to your own save path. Change lines 147 and 148 to point to the BigEarthNet dataset.
+* This model uses the data mart lmdb format. Please run [selftry1.py](https://github.com/schlange-git/feather-study-about-DIMO-MM/blob/main/datasets/BigEarthNet/selftry1.py) . Change lines 147 and 148 to point to the BigEarthNet dataset.
 * 
 ## Run the code
 ### attention
