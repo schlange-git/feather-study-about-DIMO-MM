@@ -20,4 +20,4 @@ The original dataset uses a large number of features, I have provided both the o
 ### process
 
 * Using only the dataset after pca is the default configuration for ipynb. If the original data (about 14GB) is used, change the name in read file code in the third block.
-* 
+* The code in quickstart.ipynb should run directly. Please let me know if it doesn't work.
