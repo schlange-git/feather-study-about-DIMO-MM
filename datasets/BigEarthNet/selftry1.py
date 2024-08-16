@@ -277,7 +277,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir_s1', type=str, default='../')
     parser.add_argument('--data_dir_s2', type=str, default='../')
-    parser.add_argument('--save_dir', type=str, default='../dataload_op2_lmdb')
+    parser.add_argument('--save_dir', type=str, default='../dataload_op1_lmdb')
     parser.add_argument('--make_lmdb_dataset', type=bool, default=True)
     args = parser.parse_args()
 
