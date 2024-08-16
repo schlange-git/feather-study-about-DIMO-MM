@@ -275,9 +275,9 @@ if __name__ == '__main__':
     from cvtorchvision import cvtransforms
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir_s1', type=str, default='D:/360MoveData/Users/14174/Desktop/2024ss/hottopic/DINO-MM-main/datasets')
-    parser.add_argument('--data_dir_s2', type=str, default='D:/360MoveData/Users/14174/Desktop/2024ss/hottopic/DINO-MM-main/datasets')
-    parser.add_argument('--save_dir', type=str, default='D:/360MoveData/Users/14174/Desktop/2024ss/hottopic/DINO-MM-main/datasets/dataload_op1_lmdb')
+    parser.add_argument('--data_dir_s1', type=str, default='../')
+    parser.add_argument('--data_dir_s2', type=str, default='../')
+    parser.add_argument('--save_dir', type=str, default='../dataload_op2_lmdb')
     parser.add_argument('--make_lmdb_dataset', type=bool, default=True)
     args = parser.parse_args()
 
@@ -300,9 +300,6 @@ if __name__ == '__main__':
         test_dataset_s1 = Bigearthnet(root_s1=args.data_dir_s1, root_s2=args.data_dir_s2, split='bigearthnet-test-subset', bands_s1=all_bands_s1, bands_s2=all_bands_s2)
         test_dataset_s2 = Bigearthnet(root_s1=args.data_dir_s1, root_s2=args.data_dir_s2, split='bigearthnet-test-subset', bands_s1=all_bands_s1, bands_s2=all_bands_s2)
         make_lmdb(test_dataset_s1, test_dataset_s2, lmdb_file=os.path.join(args.save_dir, 'test_B14.lmdb'))
-        val_dataset_s1 = Bigearthnet(root_s1=args.data_dir_s1, root_s2=args.data_dir_s2, split='bigearthnet-val-subset', bands_s1=all_bands_s1, bands_s2=all_bands_s2)
-        val_dataset_s2 = Bigearthnet(root_s1=args.data_dir_s1, root_s2=args.data_dir_s2, split='bigearthnet-val-subset', bands_s1=all_bands_s1, bands_s2=all_bands_s2)
-        make_lmdb(val_dataset_s1, val_dataset_s2, lmdb_file=os.path.join(args.save_dir, 'val_B14.lmdb'))
         print('LMDB dataset created: %s seconds.' % (time.time() - start_time))
 
 
