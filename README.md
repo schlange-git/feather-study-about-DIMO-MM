@@ -15,6 +15,8 @@ The original dataset uses a large number of features, I have provided both the o
 ### make lmdb dataset 
 The lmdb dataset is the basis for running visualisation as well as resnet-18. Approximately 100GB of space is pre-allocated for the lmdb in the code.
 * This model uses the data mart lmdb format. Please run [selftry1.py](https://github.com/schlange-git/feather-study-about-DIMO-MM/blob/main/datasets/BigEarthNet/selftry1.py) . Change lines 147 and 148 to point to the BigEarthNet dataset.
+*The lmdb folder should look like this
+![image](https://github.com/user-attachments/assets/0f7e5de2-2f58-4164-ac7d-3a74a43bc03c)
 ## Run the code
 ### attention
 1. **%%%%%%task.py** and **quickstart.ipynb** are similar in content. But the order of the blocks is not the same. The former is the order I wrote myself. The latter is more conducive to fast verification. I put the data preparation and other pre-work code block to the end.
