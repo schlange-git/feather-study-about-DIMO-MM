@@ -4,7 +4,7 @@ Created on Mon May 27 06:15:38 2024
 
 @author: 14174
 """
-#%% 基本模型加载
+#%% get model 
 import os
 import sys
 import argparse
@@ -25,12 +25,23 @@ from torchvision import transforms as pth_transforms
 import numpy as np
 from PIL import Image
 
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-
 from models.dino import utils
 from models.dino import vision_transformer as vits
 
+def apply_mask(image, mask, color, alpha=0.5):
+    for c in range(3):
+        image[:, :, c] = image[:, :, c] * (1 - alpha * mask) + alpha * mask * color[c] * 255
+    return image
+
+def random_colors(N, bright=True):
+    """
+    Generate random colors.
+    """
+    brightness = 1.0 if bright else 0.7
+    hsv = [(i / N, 1, brightness) for i in range(N)]
+    colors = list(map(lambda c: colorsys.hsv_to_rgb(*c), hsv))
+    random.shuffle(colors)
+    return colors
 
 arch = 'vit_small'
 patch_size = 8
@@ -52,25 +63,21 @@ state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
 state_dict = {k.replace("backbone.", ""): v for k, v in state_dict.items()}
 msg = model.load_state_dict(state_dict, strict=False)
 
-
 from datasets.BigEarthNet.bigearthnet_dataset_seco_lmdb_B14 import LMDBDataset
 from cvtorchvision import cvtransforms
 
 train_dataset = LMDBDataset(
         lmdb_file='datasets/dataload_op1_lmdb/train_B14.lmdb',
         transform=cvtransforms.Compose([cvtransforms.ToTensor()])
-
     )
-
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=1000, shuffle=True,num_workers=0)
-
+train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=True,num_workers=0)
 
 test_dataset = LMDBDataset(
-        lmdb_file='datasets/dataload_op1_lmdb/test_B14.lmdb',
+        lmdb_file='datasets/dataload_op1_lmdb/train_B14.lmdb',
         transform=cvtransforms.Compose([cvtransforms.ToTensor()])
     )
-test_loader = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=True,num_workers=0)
 
+test_loader = torch.utils.data.DataLoader(train_dataset, batch_size=1000, shuffle=True,num_workers=0)
 
 
 NEW_LABELS = [
@@ -95,6 +102,77 @@ NEW_LABELS = [
     'Marine waters'
 ]
 
+for idx, (imgs,target) in enumerate(train_loader):
+    if idx>45:
+        break
+img = imgs[0]
+img1 = imgs[0].permute(1, 2, 0)
+
+#print(target)
+target_name = [NEW_LABELS[idd] for idd in range(19) if target[0,idd]]
+    
+channels = {
+    "B01": img1[:,:,0],
+    "B02": img1[:,:,1],
+    "B03": img1[:,:,2],
+    "B04": img1[:,:,3],
+    "B05": img1[:,:,4],
+    "B06": img1[:,:,5],
+    "B07": img1[:,:,6],
+    "B08": img1[:,:,7],
+    "B8A": img1[:,:,8],
+    "B09": img1[:,:,9],
+    "B11": img1[:,:,10],
+    "B12": img1[:,:,11],
+    "VH": img1[:,:,12],
+    "VV": img1[:,:,13]
+}
+
+w, h = img.shape[1] - img.shape[1] % patch_size, img.shape[2] - img.shape[2] % patch_size
+img = img[:, :w, :h].unsqueeze(0)
+
+w_featmap = img.shape[-2] // patch_size
+h_featmap = img.shape[-1] // patch_size
+
+print(w,h,w_featmap,h_featmap)
+print(img.shape)
+
+def preprocess_data(data):
+    # 检查输入是否为 NumPy 数组，如果是则转换为 PyTorch 张量
+    if isinstance(data, np.ndarray):
+        data = torch.from_numpy(data).float()
+    elif isinstance(data, torch.Tensor):
+        data = data.float()
+    else:
+        raise TypeError("Expected input type is np.ndarray or torch.Tensor, but got {}".format(type(data)))
+
+    # 选择前 14 个通道
+    if data.shape[1] == 16:
+        data = data[:, :14, :, :]
+    
+    return data
+
+img = preprocess_data(img)
+
+attentions = model.get_last_selfattention(img)
+nh = attentions.shape[1]
+attentions = attentions[0, :, 0, 1:].reshape(nh, -1)
+if threshold is not None:
+    val, idx = torch.sort(attentions)
+    val /= torch.sum(val, dim=1, keepdim=True)
+    cumval = torch.cumsum(val, dim=1)
+    th_attn = cumval > (1 - threshold)
+    idx2 = torch.argsort(idx)
+    for head in range(nh):
+        th_attn[head] = th_attn[head][idx2[head]]
+    th_attn = th_attn.reshape(nh, w_featmap, h_featmap).float()
+    # interpolate
+    th_attn = nn.functional.interpolate(th_attn.unsqueeze(0), scale_factor=patch_size, mode="nearest")[0].cpu().numpy()
+
+attentions = attentions.reshape(nh, w_featmap, h_featmap)
+print(attentions.shape)
+attentions = nn.functional.interpolate(attentions.unsqueeze(0), scale_factor=patch_size, mode="nearest")[0].cpu().numpy()
+print(attentions.shape)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
@@ -111,7 +189,6 @@ class FeatureExtractingModel(nn.Module):
         self.feature_extractor = nn.Sequential(*list(original_model.children())[:-1])
 
     def forward(self, x):
-
         # 显式处理每一层
         for module in self.feature_extractor:
             if isinstance(module, nn.ModuleList):
@@ -137,7 +214,7 @@ labels = []
 label_count = defaultdict(int)  # 用于统计每个单一标签的数量
 min_labels = 19  # 至少有5个不同的单一标签满足条件
 min_samples_per_label = 3 # 每个标签至少50个样本
-max_samples_per_label = 2  # 每个标签至多500个样本
+max_samples_per_label = 10  # 每个标签至多500个样本
 qualified_labels = set()  # 记录已达到最小样本要求的标签
 
 with torch.no_grad():
@@ -150,7 +227,7 @@ with torch.no_grad():
         batch_labels = [[NEW_LABELS[idx] for idx, label in enumerate(t) if label == 1] for t in target.cpu().numpy()]
         
         for feat, label_list in zip(batch_features, batch_labels):
-            if len(label_list) <= 2:  # 只考虑单一标签的样本
+            if len(label_list) <= 19:  # 只考虑单一标签的样本
                 label = label_list[0]
                 if label_count[label] < max_samples_per_label:
                     label_count[label] += 1
@@ -227,7 +304,7 @@ for idx, label in enumerate(unique_labels):
     plt.close()  # 关闭图形以释放资源
 
 
-#%% 重新尝试
+#%% make dataset
 import numpy as np
 import torch
 from sklearn.preprocessing import MultiLabelBinarizer
@@ -265,91 +342,6 @@ labels = np.vstack(labels) if labels else np.array([])  # 直接使用vstack堆�
 
 print("Accumulated features shape:", features.shape)
 print("Number of labels collected:", labels.shape)
-
-
-#%% PCA
-
-import numpy as np
-import torch
-from sklearn.decomposition import IncrementalPCA
-from sklearn.preprocessing import StandardScaler
-
-# 将数据转换为 NumPy 数组（如果它们还不是）
-if isinstance(features, torch.Tensor):
-    features = features.cpu().numpy()  # 确保从 GPU 转移
-
-# 将数据类型转换为 float32 减少内存消耗
-import numpy as np
-import gc
-
-def process_and_save_batch(data, batch_idx):
-    # 假设这是转换数据的函数
-    data = data.astype(np.float32)  # 转换数据类型为 float32
-    # 保存转换后的数据
-    np.save(f'batch_{batch_idx}.npy', data)
-    del data  # 删除数据以释放内存
-    gc.collect()  # 垃圾回收
-
-# 分成10个批次处理
-n_batches = 10
-batches = np.array_split(features, n_batches)
-
-for i, batch in enumerate(batches):
-    print(f"Processing batch {i+1}/{n_batches}")
-    process_and_save_batch(batch, i)
-
-# 重新加载和合并数据
-accumulated_features = None
-for i in range(n_batches):
-    batch_data = np.load(f'batch_{i}.npy')
-    if accumulated_features is None:
-        accumulated_features = batch_data
-    else:
-        accumulated_features = np.concatenate([accumulated_features, batch_data])
-    del batch_data  # 删除批次数据以释放内存
-    print(f"Batch {i+1} loaded and concatenated.")
-
-# 最后再次保存合并后的数据
-np.save('processed_features.npy', features)
-
-
-# 标准化数据
-scaler = StandardScaler()
-features = scaler.fit_transform(features)
-
-print('Data normalization complete.')
-
-# 使用 IncrementalPCA 来进行主成分分析
-n_components = 5000  # 主成分数
-n_batches = 100  # 分批处理的批次数量
-ipca = IncrementalPCA(n_components=n_components)
-
-# 分批进行PCA处理
-for batch in np.array_split(features, n_batches):
-    ipca.partial_fit(batch)
-
-# 转换全部数据
-features = ipca.transform(features)
-
-print('PCA transformation complete.')
-
-# 将降维后的数据转换回 PyTorch 张量，如果需要的话
-features = torch.from_numpy(features).float()
-
-print("Accumulated features shape:", features.shape)
-print("Number of labels collected:", len(labels))
-
-# 将features和labels保存为二进制格式的.npy文件
-np.save('pca_features2.npy', features)  # 保存features数组
-np.save('pca_labels2.npy', labels)      # 保存labels数组
-
-print('Data saved successfully.')
-
-
-
-#%% 保存数据结果
-import numpy as np
-
 # 将features和labels保存为二进制格式的.npy文件
 np.save('features_try1.npy', features)  # 保存features数组
 np.save('labels_try1.npy', labels)      # 保存labels数组
@@ -358,7 +350,7 @@ train_features = np.load('features_try1.npy',allow_pickle=True)
 train_labels = np.load('labels_try1.npy',allow_pickle=True)
 test_features = np.load('features_try2.npy',allow_pickle=True)
 test_labels = np.load('labels_try2.npy',allow_pickle=True)
-#%% 从.npy文件加载数据
+#%% load data 
 import numpy as np
 #train_features = np.load('principal_components.npy',allow_pickle=True)
 train_features = np.load('train_features.npy',allow_pickle=True)
@@ -366,6 +358,60 @@ train_labels = np.load('train_labels.npy',allow_pickle=True)
 
 test_features = np.load('test_features.npy',allow_pickle=True)
 test_labels = np.load('test_labels.npy',allow_pickle=True)
+
+
+#%% PCA
+import numpy as np
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+import joblib  # 用于模型持久化
+
+# 假设 features 是已经加载到内存中的大型 NumPy 数组
+# 对数据进行标准化
+scaler = StandardScaler()
+features_scaled = scaler.fit_transform(train_features)
+
+print("finish scaled")
+
+import numpy as np
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+import joblib  # 用于模型持久化
+
+# 初始化PCA，选择主成分数量
+pca = PCA(n_components=5000)
+# 执行PCA
+principal_components = pca.fit_transform(features_scaled)
+
+print("PCA transformation complete.")
+print("Shape of the principal components:", principal_components.shape)
+
+# 保存主成分数组
+np.save('test_principal_components.npy', principal_components)
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+import joblib  # 用于模型持久化
+
+# 假设 features 是已经加载到内存中的大型 NumPy 数组
+# 对数据进行标准化
+scaler = StandardScaler()
+features_scaled = scaler.fit_transform(train_features)
+
+#np.save('test_features_scaled.npy', features_scaled)  # 保存features数组
+print("finish scaled")
+
+# 初始化PCA，选择主成分数量
+pca = PCA(n_components=5000)
+# 执行PCA
+principal_components = pca.fit_transform(features_scaled)
+
+print("PCA transformation complete.")
+print("Shape of the principal components:", principal_components.shape)
+
+# 保存主成分数组
+np.save('test_principal_components.npy', principal_components)
+
+
 
 #%% linear probing
 
@@ -521,7 +567,7 @@ plt.savefig('linear_pca.pdf', format='pdf')
 plt.tight_layout()
 plt.show()
 
-#%%随机森林forest
+#%% Random forest
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import fbeta_score, hamming_loss
